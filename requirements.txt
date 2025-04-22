@@ -1,0 +1,5 @@
+Python 3.8+
+Qiskit
+scikit-learn
+matplotlib, seaborn
+pandas, numpy
