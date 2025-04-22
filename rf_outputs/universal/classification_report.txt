@@ -1,0 +1,12 @@
+Universal – Random Forest
+Accuracy: 0.96
+ROC AUC: 1.00
+
+              precision    recall  f1-score   support
+
+       Clean       1.00      0.92      0.96        12
+   Malicious       0.92      1.00      0.96        12
+
+    accuracy                           0.96        24
+   macro avg       0.96      0.96      0.96        24
+weighted avg       0.96      0.96      0.96        24

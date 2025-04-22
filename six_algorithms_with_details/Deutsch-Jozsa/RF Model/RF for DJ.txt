@@ -1,0 +1,615 @@
+.. code:: ipython3
+
+    # -------------------------------------------------------------------------
+    # Deutsch-Jozsa Circuit Classification using Random Forest (Qiskit Dataset)
+    # -------------------------------------------------------------------------
+    
+    # This notebook trains and evaluates a Random Forest classifier
+    # to distinguish between clean and malicious Deutsch-Jozsa quantum circuits.
+    
+    # Dataset:
+    # - dj_full_dataset.csv (20 samples: 10 clean, 10 malicious)
+    # - Features include: depth, gate counts, entropy, success rate, output variation
+    # - Labels: 0 = clean, 1 = malicious
+    
+    # Objective:
+    # - Benchmark Random Forest performance on structural + behavioral features
+    # - Visualize classification metrics: accuracy, confusion matrix, ROC curve
+    # - Identify key features for Trojan detection in quantum algorithms
+    
+    # Tools:
+    # - sklearn (RandomForestClassifier, metrics, preprocessing)
+    # - matplotlib + seaborn for visualizations
+    # - pandas for dataset handling
+    
+    # Author: Zeeshan Ajmal
+    
+
+.. code:: ipython3
+
+    # --------------------------------------------------
+    # Import Required Libraries
+    # --------------------------------------------------
+    
+    # Data handling
+    import pandas as pd
+    import numpy as np
+    
+    # ML and preprocessing
+    from sklearn.model_selection import train_test_split
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score, roc_curve
+    from sklearn.preprocessing import StandardScaler
+    
+    # Visualization
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    
+    # Display settings
+    sns.set(style="whitegrid")
+    
+
+.. code:: ipython3
+
+    # --------------------------------------------------
+    # Load Deutsch-Jozsa Dataset and Prepare Features
+    # --------------------------------------------------
+    
+    # Load dataset
+    df_dj = pd.read_csv("dj_full_dataset.csv")
+    
+    # Display dataset shape and preview
+    print("Dataset shape:", df_dj.shape)
+    # Display full DJ dataset
+    pd.set_option('display.max_rows', None)   # Show all rows
+    pd.set_option('display.max_columns', None) # Show all columns
+    display(df_dj)
+    
+    
+    # Separate features and labels
+    X = df_dj.drop(columns=["name", "label"])
+    y = df_dj["label"]
+    
+    # check class balance
+    print("Class Distribution:")
+    print(y.value_counts())
+    
+
+
+.. parsed-literal::
+
+    Dataset shape: (20, 11)
+    
+
+
+.. raw:: html
+
+    <div>
+    <style scoped>
+        .dataframe tbody tr th:only-of-type {
+            vertical-align: middle;
+        }
+    
+        .dataframe tbody tr th {
+            vertical-align: top;
+        }
+    
+        .dataframe thead th {
+            text-align: right;
+        }
+    </style>
+    <table border="1" class="dataframe">
+      <thead>
+        <tr style="text-align: right;">
+          <th></th>
+          <th>name</th>
+          <th>depth</th>
+          <th>cx</th>
+          <th>h</th>
+          <th>x</th>
+          <th>ccx</th>
+          <th>total_gates</th>
+          <th>success_rate</th>
+          <th>entropy</th>
+          <th>unique_states</th>
+          <th>label</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>0</th>
+          <td>dj_clean_0</td>
+          <td>3</td>
+          <td>0</td>
+          <td>7</td>
+          <td>1</td>
+          <td>0</td>
+          <td>13</td>
+          <td>49.682617</td>
+          <td>1.113984</td>
+          <td>8</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <th>1</th>
+          <td>dj_clean_1</td>
+          <td>4</td>
+          <td>0</td>
+          <td>7</td>
+          <td>2</td>
+          <td>0</td>
+          <td>14</td>
+          <td>50.219727</td>
+          <td>1.103618</td>
+          <td>8</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <th>2</th>
+          <td>dj_clean_2</td>
+          <td>3</td>
+          <td>0</td>
+          <td>7</td>
+          <td>1</td>
+          <td>0</td>
+          <td>13</td>
+          <td>49.853516</td>
+          <td>1.111413</td>
+          <td>8</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <th>3</th>
+          <td>dj_clean_3</td>
+          <td>6</td>
+          <td>2</td>
+          <td>7</td>
+          <td>1</td>
+          <td>0</td>
+          <td>15</td>
+          <td>48.559570</td>
+          <td>1.390499</td>
+          <td>10</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <th>4</th>
+          <td>dj_clean_4</td>
+          <td>3</td>
+          <td>0</td>
+          <td>7</td>
+          <td>1</td>
+          <td>0</td>
+          <td>13</td>
+          <td>49.755859</td>
+          <td>1.102320</td>
+          <td>8</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <th>5</th>
+          <td>dj_clean_5</td>
+          <td>4</td>
+          <td>0</td>
+          <td>7</td>
+          <td>2</td>
+          <td>0</td>
+          <td>14</td>
+          <td>49.975586</td>
+          <td>1.107208</td>
+          <td>9</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <th>6</th>
+          <td>dj_clean_6</td>
+          <td>3</td>
+          <td>0</td>
+          <td>7</td>
+          <td>1</td>
+          <td>0</td>
+          <td>13</td>
+          <td>51.708984</td>
+          <td>1.102507</td>
+          <td>8</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <th>7</th>
+          <td>dj_clean_7</td>
+          <td>6</td>
+          <td>2</td>
+          <td>7</td>
+          <td>1</td>
+          <td>0</td>
+          <td>15</td>
+          <td>47.973633</td>
+          <td>1.409767</td>
+          <td>14</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <th>8</th>
+          <td>dj_clean_8</td>
+          <td>3</td>
+          <td>0</td>
+          <td>7</td>
+          <td>1</td>
+          <td>0</td>
+          <td>13</td>
+          <td>50.415039</td>
+          <td>1.102462</td>
+          <td>8</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <th>9</th>
+          <td>dj_clean_9</td>
+          <td>4</td>
+          <td>0</td>
+          <td>7</td>
+          <td>2</td>
+          <td>0</td>
+          <td>14</td>
+          <td>49.438477</td>
+          <td>1.106187</td>
+          <td>8</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <th>10</th>
+          <td>dj_malicious_0</td>
+          <td>7</td>
+          <td>2</td>
+          <td>7</td>
+          <td>4</td>
+          <td>0</td>
+          <td>18</td>
+          <td>47.949219</td>
+          <td>1.337219</td>
+          <td>11</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <th>11</th>
+          <td>dj_malicious_1</td>
+          <td>7</td>
+          <td>3</td>
+          <td>7</td>
+          <td>1</td>
+          <td>0</td>
+          <td>16</td>
+          <td>47.387695</td>
+          <td>1.449411</td>
+          <td>13</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <th>12</th>
+          <td>dj_malicious_2</td>
+          <td>5</td>
+          <td>1</td>
+          <td>7</td>
+          <td>2</td>
+          <td>0</td>
+          <td>16</td>
+          <td>48.852539</td>
+          <td>1.210870</td>
+          <td>8</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <th>13</th>
+          <td>dj_malicious_3</td>
+          <td>6</td>
+          <td>3</td>
+          <td>7</td>
+          <td>3</td>
+          <td>0</td>
+          <td>18</td>
+          <td>47.192383</td>
+          <td>1.519457</td>
+          <td>15</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <th>14</th>
+          <td>dj_malicious_4</td>
+          <td>7</td>
+          <td>2</td>
+          <td>7</td>
+          <td>2</td>
+          <td>0</td>
+          <td>16</td>
+          <td>61.596680</td>
+          <td>1.229426</td>
+          <td>10</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <th>15</th>
+          <td>dj_malicious_5</td>
+          <td>6</td>
+          <td>2</td>
+          <td>7</td>
+          <td>1</td>
+          <td>0</td>
+          <td>16</td>
+          <td>48.291016</td>
+          <td>1.316902</td>
+          <td>11</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <th>16</th>
+          <td>dj_malicious_6</td>
+          <td>7</td>
+          <td>2</td>
+          <td>7</td>
+          <td>4</td>
+          <td>0</td>
+          <td>18</td>
+          <td>48.413086</td>
+          <td>1.372343</td>
+          <td>10</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <th>17</th>
+          <td>dj_malicious_7</td>
+          <td>7</td>
+          <td>3</td>
+          <td>7</td>
+          <td>1</td>
+          <td>0</td>
+          <td>16</td>
+          <td>47.973633</td>
+          <td>1.528666</td>
+          <td>13</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <th>18</th>
+          <td>dj_malicious_8</td>
+          <td>5</td>
+          <td>1</td>
+          <td>7</td>
+          <td>2</td>
+          <td>0</td>
+          <td>16</td>
+          <td>48.779297</td>
+          <td>1.256007</td>
+          <td>9</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <th>19</th>
+          <td>dj_malicious_9</td>
+          <td>6</td>
+          <td>3</td>
+          <td>7</td>
+          <td>3</td>
+          <td>0</td>
+          <td>18</td>
+          <td>48.608398</td>
+          <td>1.452988</td>
+          <td>15</td>
+          <td>1</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+
+.. parsed-literal::
+
+    Class Distribution:
+    label
+    0    10
+    1    10
+    Name: count, dtype: int64
+    
+
+.. code:: ipython3
+
+    # --------------------------------------------------
+    # Train-Test Split and Feature Scaling
+    # --------------------------------------------------
+    
+    from sklearn.model_selection import train_test_split
+    from sklearn.preprocessing import StandardScaler
+    
+    # Split the dataset
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+    
+    # Scale features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    
+    print("Training set shape:", X_train.shape)
+    print("Testing set shape:", X_test.shape)
+    
+
+
+.. parsed-literal::
+
+    Training set shape: (16, 9)
+    Testing set shape: (4, 9)
+    
+
+.. code:: ipython3
+
+    # --------------------------------------------------
+    # Train Random Forest Model and Make Predictions
+    # --------------------------------------------------
+    
+    from sklearn.ensemble import RandomForestClassifier
+    
+    # Initialize model
+    rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+    
+    # Train model
+    rf_model.fit(X_train_scaled, y_train)
+    
+    # Make predictions
+    y_pred = rf_model.predict(X_test_scaled)
+    y_proba = rf_model.predict_proba(X_test_scaled)[:, 1]  # For ROC curve
+    
+
+.. code:: ipython3
+
+    # --------------------------------------------------
+    # Evaluate Model Performance
+    # --------------------------------------------------
+    
+    from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
+    
+    # Accuracy
+    accuracy = accuracy_score(y_test, y_pred)
+    roc_auc = roc_auc_score(y_test, y_proba)
+    
+    print(f"✅ Accuracy: {accuracy:.2f}")
+    print(f"✅ ROC AUC Score: {roc_auc:.2f}")
+    print("\n🧾 Classification Report:\n")
+    print(classification_report(y_test, y_pred, target_names=["Clean", "Malicious"]))
+    
+    # Save evaluation metrics to text file
+    with open("dj_rf_metrics.txt", "w") as f:
+        f.write(f"Accuracy: {accuracy:.2f}\n")
+        f.write(f"ROC AUC Score: {roc_auc:.2f}\n\n")
+        f.write("Classification Report:\n")
+        f.write(classification_report(y_test, y_pred, target_names=["Clean", "Malicious"]))
+    
+    
+
+
+.. parsed-literal::
+
+    ✅ Accuracy: 0.75
+    ✅ ROC AUC Score: 1.00
+    
+    🧾 Classification Report:
+    
+                  precision    recall  f1-score   support
+    
+           Clean       1.00      0.50      0.67         2
+       Malicious       0.67      1.00      0.80         2
+    
+        accuracy                           0.75         4
+       macro avg       0.83      0.75      0.73         4
+    weighted avg       0.83      0.75      0.73         4
+    
+    
+
+.. code:: ipython3
+
+    # --------------------------------------------------
+    # Confusion Matrix and ROC Curve Visualization
+    # --------------------------------------------------
+    
+    from sklearn.metrics import confusion_matrix, roc_curve
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    
+    # Confusion matrix
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(5, 4))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=["Clean", "Malicious"], yticklabels=["Clean", "Malicious"])
+    plt.xlabel("Predicted Label")
+    plt.ylabel("True Label")
+    plt.title("Confusion Matrix – DJ Circuits (RF)")
+    plt.tight_layout()
+    plt.savefig("dj_rf_confusion_matrix.png", dpi=300)
+    plt.show()
+    
+    # ROC curve
+    fpr, tpr, thresholds = roc_curve(y_test, y_proba)
+    plt.figure(figsize=(6, 4))
+    plt.plot(fpr, tpr, label=f"ROC AUC = {roc_auc:.2f}")
+    plt.plot([0, 1], [0, 1], linestyle='--', color='gray')
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC Curve – DJ Circuits (RF)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("dj_rf_ROC_curve.png", dpi=300)
+    plt.show()
+    
+    
+
+
+
+.. image:: output_6_0.png
+
+
+
+.. image:: output_6_1.png
+
+
+.. code:: ipython3
+
+    # --------------------------------------------------
+    # Feature Importance Visualization – Random Forest
+    # --------------------------------------------------
+    
+    # Get feature names and importances
+    feature_names = X.columns
+    importances = rf_model.feature_importances_
+    
+    # Create DataFrame for sorting
+    feature_df = pd.DataFrame({
+        'Feature': feature_names,
+        'Importance': importances
+    }).sort_values(by='Importance', ascending=False)
+    
+    
+    # Plot
+    plt.figure(figsize=(8, 5))
+    sns.barplot(x="Importance", y="Feature", data=feature_df, palette="viridis")
+    plt.title("Feature Importance – DJ Circuit Classification (RF)")
+    plt.xlabel("Feature Weight")
+    plt.ylabel("Feature")
+    plt.tight_layout()
+    plt.savefig("dj_rf_feature_weight.png", dpi=300)
+    plt.show()
+    
+    # Display raw values
+    
+    print(feature_df)
+    
+    # Optional: also save as .txt for LaTeX or thesis appendix
+    feature_df.to_string(buf=open("dj_rf_feature_importance.txt", "w"))
+    
+
+
+.. parsed-literal::
+
+    C:\Users\zeesh\AppData\Local\Temp\ipykernel_38100\1221967514.py:18: FutureWarning: 
+    
+    Passing `palette` without assigning `hue` is deprecated and will be removed in v0.14.0. Assign the `y` variable to `hue` and set `legend=False` for the same effect.
+    
+      sns.barplot(x="Importance", y="Feature", data=feature_df, palette="viridis")
+    
+
+
+.. image:: output_7_1.png
+
+
+.. parsed-literal::
+
+             Feature  Importance
+    5    total_gates    0.299211
+    7        entropy    0.164469
+    1             cx    0.163558
+    0          depth    0.155658
+    8  unique_states    0.133799
+    6   success_rate    0.058785
+    3              x    0.024520
+    4            ccx    0.000000
+    2              h    0.000000
+    
+

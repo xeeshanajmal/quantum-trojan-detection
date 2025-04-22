@@ -1,0 +1,12 @@
+Universal (QSVM) - QSVM
+Accuracy: 0.75
+ROC AUC: 0.88
+
+              precision    recall  f1-score   support
+
+       Clean       1.00      0.50      0.67        12
+   Malicious       0.67      1.00      0.80        12
+
+    accuracy                           0.75        24
+   macro avg       0.83      0.75      0.73        24
+weighted avg       0.83      0.75      0.73        24

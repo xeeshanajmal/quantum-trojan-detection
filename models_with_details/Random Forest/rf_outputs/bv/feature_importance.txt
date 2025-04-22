@@ -1,0 +1,10 @@
+         Feature  Importance
+0          depth    0.275286
+2              h    0.240875
+1             cx    0.162621
+3              x    0.153672
+7        entropy    0.076287
+6   success_rate    0.064658
+5    total_gates    0.024175
+8  unique_states    0.002427
+4            ccx    0.000000

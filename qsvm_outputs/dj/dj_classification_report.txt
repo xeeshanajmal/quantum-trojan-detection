@@ -1,0 +1,12 @@
+Deutsch-Jozsa (QSVM) - QSVM
+Accuracy: 0.75
+ROC AUC: 0.25
+
+              precision    recall  f1-score   support
+
+       Clean       1.00      0.50      0.67         2
+   Malicious       0.67      1.00      0.80         2
+
+    accuracy                           0.75         4
+   macro avg       0.83      0.75      0.73         4
+weighted avg       0.83      0.75      0.73         4
