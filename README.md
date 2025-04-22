@@ -31,11 +31,19 @@ This project focuses on the detection of trojan-injected quantum circuits using 
 
 ```plaintext
 📦 quantum-trojan-detection/
- ┣ 📂 data/                      # CSV datasets for each algorithm
- ┣ 📂 notebooks/                # Jupyter notebooks for QSVM and RF experiments
- ┣ 📂 scripts/                  # Python scripts for dataset generation
- ┣ 📂 models/                   # Saved ML/QML models (optional)
- ┣ 📜 dataset_generation.ipynb # Main pipeline for creating labeled data
- ┣ 📜 qsvm_classifier.ipynb     # QSVM training and visualization
- ┣ 📜 rf_classifier.ipynb       # Random Forest training and feature importance
- ┣ 📜 README.md                 # You’re here!
+ ┣ 📂 datasets/                  # Final CSV datasets (clean + malicious circuits)
+ ┣ 📂 models/                    # Saved models (e.g., .pkl, serialized classifiers)
+ ┣ 📂 models_with_details/       # Visuals + metrics for each model (confusion, ROC, etc.)
+ ┣ 📂 notebooks/                 # Main Jupyter notebooks for QSVM and RF
+ ┃ ┣ 📜 rf_classifier.ipynb
+ ┃ ┣ 📜 qsvm_classifier.ipynb
+ ┃ ┗ 📜 dataset_generation.ipynb
+ ┣ 📂 qsvm_outputs/              # Output folders per algorithm for QSVM results
+ ┣ 📂 rf_outputs/                # Output folders per algorithm for RF results
+ ┣ 📂 six_algorithms_with_details/ # Qiskit code for all six quantum algorithms
+ ┃ ┣ 📜 grover.ipnyb
+ ┃ ┣ 📜 qaoa.ipnyb
+ ┃ ┗ 📜 ...
+ ┣ 📜 README.md
+ ┣ 📜 .gitignore
+ ┗ 📜 requirements.txt
